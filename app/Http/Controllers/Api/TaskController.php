@@ -16,16 +16,16 @@ class TaskController extends Controller
      */
     public function index(Request $request)
     {
+        try {
+            $user = auth()->user();
+            $tasks = $user->tasks()->orderBy('id', 'desc')->paginate(10);
 
-        $user = auth()->user();
-        $tasks = $user->tasks()->orderBy('id', 'desc')->paginate(10);
-        if ($tasks) {
             return response()->json([
                 'status' => 'success',
                 'message' => 'All tasks fetched',
                 'data' => $tasks
             ]);
-        } else {
+        } catch (\Exception $e) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'An error occurred',
@@ -38,23 +38,30 @@ class TaskController extends Controller
      */
     public function store(StoreTaskRequest $request)
     {
-        $user = $request->user();
-        $data = $request->validated();
-        $task = Task::create([
-            'title' => $data['title'],
-            'description' => $data['description'],
-            'status' => $data['status'],
-            'user_id' => $user->id
-        ]);
+        try {
+            $user = $request->user();
+            $data = $request->validated();
+            $task = Task::create([
+                'title' => $data['title'],
+                'description' => $data['description'],
+                'status' => $data['status'],
+                'user_id' => $user->id
+            ]);
 
-        return response()->json(
-            [
-                'status' => 'success',
-                'message' => 'Task created',
-                'data' => $task
-            ],
-            201
-        );
+            return response()->json(
+                [
+                    'status' => 'success',
+                    'message' => 'Task created',
+                    'data' => $task
+                ],
+                201
+            );
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'An error occurred',
+            ], 500);
+        }
     }
 
     /**
@@ -62,13 +69,21 @@ class TaskController extends Controller
      */
     public function show(Request $request, $id)
     {
-        $user = $request->user();
-        $task = $user->tasks()->findOrFail($id);
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Task details fetched',
-            'data' => $task
-        ]);
+        try {
+            $user = $request->user();
+            $task = $user->tasks()->findOrFail($id);
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Task details fetched',
+                'data' => $task
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Task not found',
+            ], 404);
+        }
     }
 
     /**
@@ -76,32 +91,40 @@ class TaskController extends Controller
      */
     public function update(UpdateTaskRequest $request, $id)
     {
-        $data = $request->validated();
-        $task = auth()->user()->tasks()->find($id);
+        try {
+            $data = $request->validated();
+            $task = auth()->user()->tasks()->find($id);
 
-        if (!$task) {
+            if (!$task) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Task not found'
+                ], 400);
+            }
+
+            $updated = $task->fill($data)->save();
+
+            if ($updated) {
+                return response()->json(
+                    [
+                        'status' => 'success',
+                        'message' => 'Task updated',
+                        'data' => $task
+                    ],
+                    200
+                );
+            } else {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Task cannot be updated'
+                ], 500);
+            }
+        } catch (\Exception $e) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'task not found'
-            ], 400);
-        }
-
-        $updated = $task->fill($data)->save();
-
-        if ($updated)
-            return response()->json(
-                [
-                    'status' => 'success',
-                    'message' => 'Task updated',
-                    'data' => $task
-                ],
-                200
-            );
-        else
-            return response()->json([
-                'success' => false,
-                'message' => 'Task can not be updated'
+                'message' => 'An error occurred',
             ], 500);
+        }
     }
 
     /**
@@ -109,19 +132,27 @@ class TaskController extends Controller
      */
     public function destroy($id)
     {
-        $task = auth()->user()->tasks()->find($id);
-        if (!$task) {
+        try {
+            $task = auth()->user()->tasks()->find($id);
+            if (!$task) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Task not found'
+                ], 404);
+            }
+
+            if ($task->delete()) {
+                return response()->json(null, 204);
+            } else {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'An error occurred while deleting this task',
+                ], 500);
+            }
+        } catch (\Exception $e) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Task not found'
-            ], 404);
-        };
-        if ($task->delete()) {
-            return response()->json(null, 204);
-        } else {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'An error occured while deleting this task',
+                'message' => 'An error occurred',
             ], 500);
         }
     }
