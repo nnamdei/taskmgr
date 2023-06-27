@@ -18,13 +18,15 @@ class TaskController extends Controller
     {
         try {
             $user = auth()->user();
-            $tasks = $user->tasks()->orderBy('id', 'desc')->paginate(10);
+            $tasks = Task::where('user_id', $user->id)->orderBy('id', 'DESC')->get();
 
-            return response()->json([
-                'status' => 'success',
-                'message' => 'All tasks fetched',
-                'data' => $tasks
-            ]);
+            if ($tasks) {
+                return response()->json([
+                    'status' => 'success',
+                    'message' => 'All tasks fetched',
+                    'data' => $tasks
+                ]);
+            }
         } catch (\Exception $e) {
             return response()->json([
                 'status' => 'error',

@@ -26,12 +26,14 @@ class AuthController extends Controller
         }
         $user = Auth::user();
         $token =  $user->createToken('main')->accessToken;
-
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Login successful',
-            'token' => $token
-        ], 200);
+        $message = 'User created successfully';
+        return response(compact('message', 'user', 'token'));
+        // return response()->json([
+        //     'status' => 'success',
+        //     'message' => 'Login successful',
+        //     'token' => $token,
+        //     'data' => $user
+        // ], 200);
     }
 
     public function signup(SignupRequest $request)
@@ -45,15 +47,21 @@ class AuthController extends Controller
         ]);
 
         $token =  $user->createToken('main')->accessToken;
-
-        return response()->json([
-            'status' => 'success',
-            'message' => 'User registered successfully',
-            'token' => $token
-        ], 201);
+        $message = 'Login successful';
+        return response(compact('message','user', 'token'));
+        // return response()->json([
+        //     'status' => 'success',
+        //     'message' => 'User registered successfully',
+        //     'user' => $user,
+        //     'token' => $token
+        // ], 201);
     }
 
     public function logout(Request $request)
     {
+        $token = $request->user()->token();
+        $token->revoke();
+        $response = ['message' => 'You have been successfully logged out!'];
+        return response($response, 200);
     }
 }
