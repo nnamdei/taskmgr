@@ -13,27 +13,17 @@ class AuthController extends Controller
 {
     public function login(LoginRequest $request)
     {
-        /**
-         * @var User $user 
-         */
-
         $credentials = $request->validated();
         if (!Auth::attempt($credentials)) {
             return response([
                 'status' => 'error',
                 'message' => 'Invalid login credentials'
-            ], 400);
+            ], 422);
         }
         $user = Auth::user();
         $token =  $user->createToken('main')->accessToken;
-        $message = 'User created successfully';
+        $message = 'Login successful';
         return response(compact('message', 'user', 'token'));
-        // return response()->json([
-        //     'status' => 'success',
-        //     'message' => 'Login successful',
-        //     'token' => $token,
-        //     'data' => $user
-        // ], 200);
     }
 
     public function signup(SignupRequest $request)
@@ -47,14 +37,8 @@ class AuthController extends Controller
         ]);
 
         $token =  $user->createToken('main')->accessToken;
-        $message = 'Login successful';
+        $message = 'Signup successful';
         return response(compact('message','user', 'token'));
-        // return response()->json([
-        //     'status' => 'success',
-        //     'message' => 'User registered successfully',
-        //     'user' => $user,
-        //     'token' => $token
-        // ], 201);
     }
 
     public function logout(Request $request)
